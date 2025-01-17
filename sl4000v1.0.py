@@ -141,6 +141,66 @@ class Wall(pygame.sprite.Sprite):
     def draw_wall(self, window):
         window.blit(self.image, (self.rect.x, self.rect.y))
 
+class SpecialWall(Wall):
+    def __init__(self, thickness, color, wall_x, wall_y, length, is_vertical, 
+                 wall_type=None, name=None, is_transparent=False, is_deadly=False,
+                 is_moving_vertical=False, is_moving_horizontal=False):
+        super().__init__(thickness, color, wall_x, wall_y, length, is_vertical, wall_type, name)
+        
+        # Специальные свойства стены
+        self.is_transparent = is_transparent  # Прозрачная стена
+        self.is_deadly = is_deadly  # Смертельная стена
+        self.is_moving_vertical = is_moving_vertical  # Движение вверх-вниз
+        self.is_moving_horizontal = is_moving_horizontal  # Движение влево-вправо
+        
+        # Параметры движения
+        self.initial_x = wall_x
+        self.initial_y = wall_y
+        self.move_direction = 1  # 1 или -1 для определения направления движения
+        self.move_distance = 50  # Расстояние движения в пикселях
+        self.move_speed = 2  # Скорость движения
+        
+        # Если стена прозрачная, делаем её полупрозрачной
+        if self.is_transparent:
+            self.image = self.image.convert_alpha()
+            transparent_color = list(color)
+            transparent_color.append(128)  # Альфа-канал для прозрачности
+            self.image.fill(transparent_color)
+
+    def update(self):
+        """Обновление позиции движущейся стены"""
+        if self.is_moving_vertical:
+            # Движение вверх-вниз
+            self.rect.y += self.move_speed * self.move_direction
+            
+            # Проверка достижения границ движения
+            if abs(self.rect.y - self.initial_y) >= self.move_distance:
+                self.move_direction *= -1  # Меняем направление
+                
+        elif self.is_moving_horizontal:
+            # Движение влево-вправо
+            self.rect.x += self.move_speed * self.move_direction
+            
+            # Проверка достижения границ движения
+            if abs(self.rect.x - self.initial_x) >= self.move_distance:
+                self.move_direction *= -1  # Меняем направление
+
+    def check_collision(self, sprite):
+        """Проверка столкновений с учетом специальных свойств стены"""
+        if not pygame.sprite.collide_rect(self, sprite):
+            return False, False
+            
+        # Если стена прозрачная, коллизий нет
+        if self.is_transparent:
+            return False, False
+            
+        # Если стена смертельная, возвращаем флаг смерти
+        if self.is_deadly:
+            return True, True
+            
+        # Обычная коллизия
+        return True, False
+
 # Функция для создания списка стен из параметров
 def create_walls(walls_list):
     wall_objects = []
@@ -162,6 +222,43 @@ def create_walls(walls_list):
 walls_list = [
     [10, WALL_WHITE, 200, 40, 600, True, 'barricada', 'левая стена'],
     [40, WALL_BLACK, 200, 800, 500, False, 'barricada', 'правая нижняя горизонтальная стена']
+]
+
+# Функция для создания специальных стен аналогично обычным стенам
+def create_special_walls(special_walls_list):
+    special_wall_objects = []
+    for wall_params in special_walls_list:
+        wall = SpecialWall(
+            thickness=wall_params[0],      # Толщина
+            color=wall_params[1],          # Цвет
+            wall_x=wall_params[2],         # Позиция X
+            wall_y=wall_params[3],         # Позиция Y
+            length=wall_params[4],         # Длина
+            is_vertical=wall_params[5],    # Ориентация
+            wall_type=wall_params[6],      # Тип стены
+            name=wall_params[7],           # Название
+            is_transparent=wall_params[8],  # Прозрачность
+            is_deadly=wall_params[9],      # Смертельность
+            is_moving_vertical=wall_params[10],    # Движение вверх-вниз
+            is_moving_horizontal=wall_params[11]   # Движение влево-вправо
+        )
+        special_wall_objects.append(wall)
+    return special_wall_objects
+
+# Пример списка параметров для создания специальных стен
+special_walls_list = [
+    # [толщина, цвет, x, y, длина, верт?, тип, имя, прозрачность, смертельность, движ.верт, движ.гор]
+    [10, WALL_BLUE, 300, 200, 100, True, 'moving_vertical', 'движущаяся вертикальная стена', 
+     False, False, True, False],
+    
+    [10, WALL_RED, 500, 300, 200, False, 'moving_horizontal', 'движущаяся горизонтальная стена',
+     False, False, False, True],
+    
+    [10, WALL_GREEN, 700, 400, 150, True, 'transparent', 'прозрачная стена',
+     True, False, False, False],
+    
+    [10, WALL_RED, 400, 500, 100, False, 'deadly', 'смертельная стена',
+     False, True, False, False]
 ]
 
 # Устанавливаем размеры игрового окна
@@ -190,6 +287,7 @@ final = GameSprite(treasure_img, win_width - 120, win_height - 80, 0)  # Сок�
 
 # Создаем списки игровых объектов
 walls = create_walls(walls_list)  # Список стен
+special_walls = create_special_walls(special_walls_list)  # Список специальных стен
 monsters = [monster1]  # Список врагов
 finals = [final]  # Список целей
 
@@ -244,6 +342,9 @@ while not game_over:
             wall.draw_wall(window)
             if pygame.sprite.collide_rect(player, wall):
                 end_game(lose_text)
+
+        for special_wall in special_walls:
+            special_wall.draw_wall(window)
 
         # Обновляем и отрисовываем всех врагов, проверяем столкновения
         for monster in monsters:
