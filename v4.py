@@ -5,9 +5,6 @@ import os
 # Инициализируем все модули pygame
 pygame.init()
 # Инициализируем подсистему для работы со шрифтами
-pygame.font.init()
-# Инициализируем подсистему для работы со звуком
-pygame.mixer.init()
 
 # Получаем абсолютный путь к директории, где находится текущий файл
 GAME_DIR = os.path.dirname(os.path.abspath(__file__))
