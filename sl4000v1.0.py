@@ -1,5 +1,4 @@
 # Импортируем pygame для создания игры и os для работы с путями к файлам
-from game_sprite import GameSprite
 import pygame
 import random
 import os
