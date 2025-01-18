@@ -1,6 +1,8 @@
 # Импортируем pygame для создания игры и os для работы с путями к файлам
 import pygame
+import random
 import os
+import time
 
 # Инициализируем все модули pygame
 pygame.init()
@@ -48,13 +50,25 @@ class GameSprite(pygame.sprite.Sprite):
         # Устанавливаем начальные координаты
         self.rect.x = player_x
         self.rect.y = player_y
+        # Сохраняем начальные координаты для респауна
+        self.start_x = player_x
+        self.start_y = player_y
 
     # Метод для отрисовки спрайта на экране
     def reset(self):
         window.blit(self.image, (self.rect.x, self.rect.y))
 
+    # Метод для возврата на начальную позицию
+    def respawn(self):
+        self.rect.x = self.start_x
+        self.rect.y = self.start_y
+
 # Класс игрока, наследуется от GameSprite
 class Player(GameSprite):
+    def __init__(self, image, player_x, player_y, player_speed):
+        super().__init__(image, player_x, player_y, player_speed)
+        self.lives = 3  # Добавляем количество жизней
+
     def update(self):
         # Получаем словарь нажатых клавиш
         keys = pygame.key.get_pressed()
@@ -71,6 +85,12 @@ class Player(GameSprite):
         # Обработка движения вниз с проверкой границы
         if keys[pygame.K_DOWN] and self.rect.y < win_height - 80:
             self.rect.y += self.speed
+
+    def lose_life(self):
+        # Уменьшаем количество жизней и возвращаем игрока на старт
+        self.lives -= 1
+        self.respawn()
+        return self.lives <= 0  # Возвращаем True если жизни закончились
 
 # Класс врага, наследуется от GameSprite
 class Enemy(GameSprite):
@@ -107,7 +127,7 @@ class Enemy(GameSprite):
             if self.rect.x >= win_width - 50:
                 self.direction = 'left'
 
-# Класс стены, наследуется от pygame.sprite.Sprite
+# Класс стены с расширенными возможностями
 class Wall(pygame.sprite.Sprite):
     def __init__(self, thickness, color, wall_x, wall_y, length, is_vertical, type_wall=None, name=None):
         super().__init__()
@@ -160,12 +180,29 @@ class SpecialWall(Wall):
         self.move_distance = 50  # Расстояние движения в пикселях
         self.move_speed = 2  # Скорость движения
         
+        # Параметры прозрачности
+        self.transparency_timer = time.time()  # Время последнего изменения прозрачности
+        self.transparency_interval = 3.0  # Интервал изменения прозрачности (в секундах)
+        self.is_currently_transparent = is_transparent  # Текущее состояние прозрачности
+        
         # Если стена прозрачная, делаем её полупрозрачной
         if self.is_transparent:
             self.image = self.image.convert_alpha()
-            transparent_color = list(color)
-            transparent_color.append(128)  # Альфа-канал для прозрачности
-            self.image.fill(transparent_color)
+            self.update_transparency()
+
+    def update_transparency(self):
+        """Обновление прозрачности стены"""
+        current_time = time.time()
+        if current_time - self.transparency_timer >= self.transparency_interval:
+            self.transparency_timer = current_time
+            self.is_currently_transparent = not self.is_currently_transparent
+            
+            if self.is_currently_transparent:
+                transparent_color = list(self.color)
+                transparent_color.append(128)  # Полупрозрачность
+                self.image.fill(transparent_color)
+            else:
+                self.image.fill(self.color + (255,))  # Полная непрозрачность
 
     def update(self):
         """Обновление позиции движущейся стены"""
@@ -185,18 +222,28 @@ class SpecialWall(Wall):
             if abs(self.rect.x - self.initial_x) >= self.move_distance:
                 self.move_direction *= -1  # Меняем направление
 
+        # Обновляем прозрачность для прозрачных стен
+        if self.is_transparent:
+            self.update_transparency()
+
     def check_collision(self, sprite):
         """Проверка столкновений с учетом специальных свойств стены"""
         if not pygame.sprite.collide_rect(self, sprite):
             return False, False
             
-        # Если стена прозрачная, коллизий нет
-        if self.is_transparent:
+        # Если стена прозрачная и в данный момент прозрачна
+        if self.is_transparent and self.is_currently_transparent:
             return False, False
             
-        # Если стена смертельная, возвращаем флаг смерти
+        # Если стена смертельная
         if self.is_deadly:
             return True, True
+            
+        # Если стена движущаяся, сдвигаем спрайт
+        if self.is_moving_horizontal:
+            sprite.rect.x += self.move_speed * self.move_direction
+        elif self.is_moving_vertical:
+            sprite.rect.y += self.move_speed * self.move_direction
             
         # Обычная коллизия
         return True, False
@@ -220,7 +267,7 @@ def create_walls(walls_list):
 
 # Список параметров для создания стен
 walls_list = [
-    [10, WALL_WHITE, 200, 40, 600, True, 'barricada', 'левая стена'],
+    [20, WALL_WHITE, 200, 40, 600, True, 'barricada', 'левая стена'],
     [40, WALL_BLACK, 200, 800, 500, False, 'barricada', 'правая нижняя горизонтальная стена']
 ]
 
@@ -245,19 +292,19 @@ def create_special_walls(special_walls_list):
         special_wall_objects.append(wall)
     return special_wall_objects
 
-# Пример списка параметров для создания специальных стен
+# Список параметров для создания специальных стен
 special_walls_list = [
     # [толщина, цвет, x, y, длина, верт?, тип, имя, прозрачность, смертельность, движ.верт, движ.гор]
-    [10, WALL_BLUE, 300, 200, 100, True, 'moving_vertical', 'движущаяся вертикальная стена', 
+    [20, WALL_BLUE, 300, 200, 100, True, 'moving_vertical', 'движущаяся вертикальная стена', 
      False, False, True, False],
     
-    [10, WALL_RED, 500, 300, 200, False, 'moving_horizontal', 'движущаяся горизонтальная стена',
+    [20, WALL_RED, 500, 300, 200, False, 'moving_horizontal', 'движущаяся горизонтальная стена',
      False, False, False, True],
     
-    [10, WALL_GREEN, 700, 400, 150, True, 'transparent', 'прозрачная стена',
+    [20, WALL_GREEN, 700, 400, 150, True, 'transparent', 'прозрачная стена',
      True, False, False, False],
     
-    [10, WALL_RED, 400, 500, 100, False, 'deadly', 'смертельная стена',
+    [20, WALL_RED, 0, 500, 100, False, 'deadly', 'смертельная стена',
      False, True, False, False]
 ]
 
@@ -283,12 +330,13 @@ background = pygame.transform.scale(
 # Создаем игровые объекты
 player = Player(player_img, 5, win_height - 80, 4)  # Игрок
 monster1 = Enemy(cyborg_img, win_width - 80, 280, 2)  # Враг
+monster2 = Enemy(cyborg_img, win_width - 80, 680, 2)  # Враг
 final = GameSprite(treasure_img, win_width - 120, win_height - 80, 0)  # Сокровище
 
 # Создаем списки игровых объектов
 walls = create_walls(walls_list)  # Список стен
 special_walls = create_special_walls(special_walls_list)  # Список специальных стен
-monsters = [monster1]  # Список врагов
+monsters = [monster1, monster2]  # Список врагов
 finals = [final]  # Список целей
 
 # Загружаем звуки игры
@@ -302,11 +350,13 @@ font = pygame.font.Font(None, 70)  # Шрифт размером 70
 win_text = font.render('YOU WIN!', True, WIN)  # Текст победы
 lose_text = font.render('YOU LOSE!', True, LOSE)  # Текст поражения
 
-# Инициализируем игровые переменные
-game_over = False  # Флаг завершения игры
-clock = pygame.time.Clock()  # Создаем объект для управления временем
-finish = False  # Флаг окончания раунда
-FPS = 100  # Количество кадров в секунду
+# Создаем шрифт для отображения жизней
+lives_font = pygame.font.Font(None, 36)
+
+# Функция для отображения количества оставшихся жизней
+def draw_lives(lives):
+    lives_text = lives_font.render(f'Lives: {lives}', True, WALL_WHITE)
+    window.blit(lives_text, (10, 10))
 
 # Функция завершения игры
 def end_game(end=None):
@@ -321,6 +371,12 @@ def end_game(end=None):
         kick.play()
         window.blit(lose_text, (500, 500))
 
+# Инициализируем игровые переменные
+game_over = False  # Флаг завершения игры
+clock = pygame.time.Clock()  # Создаем объект для управления временем
+finish = False  # Флаг окончания раунда
+FPS = 100  # Количество кадров в секунду
+
 # Основной игровой цикл
 while not game_over:
     # Обрабатываем события pygame
@@ -333,25 +389,58 @@ while not game_over:
     if not finish:
         # Отрисовываем фон
         window.blit(background, (0, 0))
+        
+        # Отображаем количество оставшихся жизней
+        draw_lives(player.lives)
+        
         # Обновляем и отрисовываем игрока
         player.update()
         player.reset()
 
-        # Отрисовываем все стены и проверяем столкновения с игроком
+        # Отрисовываем все обычные стены и проверяем столкновения с игроком
         for wall in walls:
             wall.draw_wall(window)
             if pygame.sprite.collide_rect(player, wall):
-                end_game(lose_text)
+                # При столкновении с обычной стеной просто откатываем позицию
+                if player.rect.y < wall.rect.y + wall.rect.height and player.rect.y + player.rect.height > wall.rect.y:
+                    if player.rect.x < wall.rect.x:
+                        player.rect.right = wall.rect.left
+                    else:
+                        player.rect.left = wall.rect.right
+                else:
+                    if player.rect.y < wall.rect.y:
+                        player.rect.bottom = wall.rect.top
+                    else:
+                        player.rect.top = wall.rect.bottom
 
+        # Обновляем и проверяем специальные стены
         for special_wall in special_walls:
+            special_wall.update()
             special_wall.draw_wall(window)
+            collision, is_deadly = special_wall.check_collision(player)
+            
+            if collision:
+                if is_deadly:
+                    # Если стена смертельная, отнимаем жизнь
+                    if player.lose_life():
+                        end_game(lose_text)
+                    else:
+                        kick.play()  # Проигрываем звук потери жизни
 
         # Обновляем и отрисовываем всех врагов, проверяем столкновения
         for monster in monsters:
             monster.update()
             monster.reset()
+            
+            # Проверяем столкновения врагов со специальными стенами
+            for special_wall in special_walls:
+                collision, _ = special_wall.check_collision(monster)
+            
             if pygame.sprite.collide_rect(player, monster):
-                end_game(lose_text)
+                if player.lose_life():
+                    end_game(lose_text)
+                else:
+                    kick.play()
 
         # Отрисовываем все цели и проверяем достижение цели
         for final in finals:
