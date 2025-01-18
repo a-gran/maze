@@ -1,5 +1,7 @@
 # Импортируем pygame для создания игры и os для работы с путями к файлам
+from game_sprite import GameSprite
 import pygame
+import random
 import os
 import time
 
@@ -329,12 +331,13 @@ background = pygame.transform.scale(
 # Создаем игровые объекты
 player = Player(player_img, 5, win_height - 80, 4)  # Игрок
 monster1 = Enemy(cyborg_img, win_width - 80, 280, 2)  # Враг
+monster2 = Enemy(cyborg_img, win_width - 80, 680, 2)  # Враг
 final = GameSprite(treasure_img, win_width - 120, win_height - 80, 0)  # Сокровище
 
 # Создаем списки игровых объектов
 walls = create_walls(walls_list)  # Список стен
 special_walls = create_special_walls(special_walls_list)  # Список специальных стен
-monsters = [monster1]  # Список врагов
+monsters = [monster1, monster2]  # Список врагов
 finals = [final]  # Список целей
 
 # Загружаем звуки игры
