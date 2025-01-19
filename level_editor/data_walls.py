@@ -1,21 +1,3 @@
-# constants.py
-import os
-
-# Получаем абсолютный путь к директории
-GAME_DIR = os.path.dirname(os.path.abspath(__file__))
-ASSETS_DIR = os.path.join(GAME_DIR, 'assets')
-IMAGES_DIR = os.path.join(ASSETS_DIR, 'images')
-SPRITES_DIR = os.path.join(IMAGES_DIR, 'sprites')
-BACKGROUNDS_DIR = os.path.join(IMAGES_DIR, 'backgrounds')
-ENEMIES_DIR = os.path.join(IMAGES_DIR, 'enemies')
-MUSIC_DIR = os.path.join(ASSETS_DIR, 'music')
-SOUNDS_DIR = os.path.join(MUSIC_DIR, 'sounds')
-
-# Размеры окна
-WIN_WIDTH = 1000
-WIN_HEIGHT = 1000
-FPS = 100
-
 # Цвета
 WALL_WHITE = (255, 255, 255)
 WALL_RED = (255, 0, 0)
@@ -25,7 +7,6 @@ WALL_BLACK = (0, 0, 0)
 WIN_COLOR = (255, 215, 0)
 LOSE_COLOR = (180, 0, 0)
 
-# Списки параметров для создания стен
 walls_list = [
     [20, WALL_WHITE, 0, 860, 120, False, 'barricada', 'левая стена'],
     [20, WALL_WHITE, 320, 810, 200, False, 'barricada', 'левая стена'],
@@ -46,15 +27,8 @@ walls_list = [
 
 special_walls_list = [
     # [толщина, цвет, x, y, длина, верт?, тип, имя, прозрачность, смертельность, движ.верт, движ.гор]
-    [20, WALL_BLUE, 300, 200, 100, True, 'moving_vertical', 'движущаяся вертикальная стена', 
-     False, False, True, False],
-    
-    [20, WALL_RED, 500, 300, 200, False, 'moving_horizontal', 'движущаяся горизонтальная стена',
-     False, False, False, True],
-    
-    [20, WALL_GREEN, 700, 400, 150, True, 'transparent', 'прозрачная стена',
-     True, False, False, False],
-    
-    [20, WALL_RED, 0, 500, 100, False, 'deadly', 'смертельная стена',
-     False, True, False, False]
+    [20, WALL_BLUE, 300, 200, 100, True, 'moving_vertical', 'движущаяся вертикальная стена', False, False, True, False],    
+    [20, WALL_RED, 500, 300, 200, False, 'moving_horizontal', 'движущаяся горизонтальная стена', False, False, False, True],    
+    [20, WALL_GREEN, 700, 400, 150, True, 'transparent', 'прозрачная стена', True, False, False, False],    
+    [20, WALL_RED, 0, 500, 100, False, 'deadly', 'смертельная стена', False, True, False, False]
 ]

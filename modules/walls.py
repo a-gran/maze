@@ -1,6 +1,6 @@
 import pygame
 import time
-from consts import *
+from paths import *
 
 class Wall(pygame.sprite.Sprite):
     def __init__(self, thickness, color, wall_x, wall_y, length, is_vertical, type_wall=None, name=None):

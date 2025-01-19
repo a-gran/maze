@@ -1,11 +1,17 @@
 import pygame
 import os
-from consts import *
+from paths import *
+from level_editor.data_walls import *
 from sprites import GameSprite
 from player import Player
 from enemy import Enemy
 from walls import Wall, SpecialWall
 from utils import create_walls, create_special_walls, draw_lives, end_game
+
+# Размеры окна
+WIN_WIDTH = 1000
+WIN_HEIGHT = 1000
+FPS = 100
 
 def main():
     pygame.init()
