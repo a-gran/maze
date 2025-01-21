@@ -20,6 +20,7 @@ class Player(GameSprite):
             next_y += wall.move_speed * wall.move_direction
             
         return next_x, next_y
+        # 
 
     def check_edge_collision(self, wall, next_x, next_y):
         """Проверяет столкновение с узкими сторонами стены с учётом её движения"""
