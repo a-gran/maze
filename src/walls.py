@@ -1,6 +1,6 @@
 import pygame
 import time
-from paths import *
+from paths import *  # Импортируем пути из корневого paths.py
 
 class Wall(pygame.sprite.Sprite):
     def __init__(self, thickness, color, wall_x, wall_y, length, is_vertical, type_wall=None, name=None):
@@ -92,9 +92,12 @@ class SpecialWall(Wall):
         if self.is_deadly:
             return True, True
             
+        # При столкновении с движущейся стеной отталкиваем спрайт
         if self.is_moving_horizontal:
+            # Движение спрайта вместе со стеной
             sprite.rect.x += self.move_speed * self.move_direction
         elif self.is_moving_vertical:
+            # Движение спрайта вместе со стеной
             sprite.rect.y += self.move_speed * self.move_direction
             
         return True, False

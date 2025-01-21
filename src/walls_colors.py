@@ -1,0 +1,8 @@
+# Цвета
+WALL_WHITE = (255, 255, 255)
+WALL_RED = (255, 0, 0)
+WALL_GREEN = (0, 255, 0)
+WALL_BLUE = (0, 0, 255)
+WALL_BLACK = (0, 0, 0)
+WIN_COLOR = (255, 215, 0)
+LOSE_COLOR = (180, 0, 0)

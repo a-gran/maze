@@ -1,12 +1,14 @@
 import pygame
 import os
 from paths import *
-from level_editor.data_walls import *
-from sprites import GameSprite
-from player import Player
-from enemy import Enemy
-from walls import Wall, SpecialWall
-from utils import create_walls, create_special_walls, draw_lives, end_game
+from src.walls_colors import *
+from src.sprites import GameSprite
+from src.player import Player
+from src.enemy import Enemy
+from src.walls import Wall, SpecialWall
+from src.utils import create_walls, create_special_walls, draw_lives, end_game
+
+from src.data_walls import walls_dict_list, special_walls_dict_list
 
 # Размеры окна
 WIN_WIDTH = 1000
@@ -35,15 +37,15 @@ def main():
         (WIN_WIDTH, WIN_HEIGHT)
     )
 
-    # Создание игровых объектов с передачей необходимых параметров
+    # Создание игровых объектов
     player = Player(player_img, 5, WIN_HEIGHT - 80, 4, WIN_WIDTH, WIN_HEIGHT)
     monster1 = Enemy(cyborg_img, WIN_WIDTH - 80, 280, 2, WIN_WIDTH)
     monster2 = Enemy(cyborg_img, WIN_WIDTH - 80, 680, 2, WIN_WIDTH)
     final = GameSprite(treasure_img, WIN_WIDTH - 120, WIN_HEIGHT - 80, 0)
 
-    # Создание стен с передачей классов
-    walls = create_walls(walls_list, Wall)
-    special_walls = create_special_walls(special_walls_list, SpecialWall)
+    # Создание стен
+    walls = create_walls(walls_dict_list, Wall)
+    special_walls = create_special_walls(special_walls_dict_list, SpecialWall)
     monsters = [monster1, monster2]
     finals = [final]
 
@@ -59,6 +61,7 @@ def main():
     clock = pygame.time.Clock()
     finish = False
 
+    # Теперь WALL_WHITE и другие цвета доступны в основном цикле
     while not game_over:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -68,23 +71,15 @@ def main():
             window.blit(background, (0, 0))
             draw_lives(window, player.lives, lives_font, WALL_WHITE)
             
-            player.update()
+            # Обновляем игрока с передачей обоих списков стен
+            player.update(walls, special_walls)
             player.reset(window)
 
+            # Отрисовка обычных стен
             for wall in walls:
                 wall.draw_wall(window)
-                if pygame.sprite.collide_rect(player, wall):
-                    if player.rect.y < wall.rect.y + wall.rect.height and player.rect.y + player.rect.height > wall.rect.y:
-                        if player.rect.x < wall.rect.x:
-                            player.rect.right = wall.rect.left
-                        else:
-                            player.rect.left = wall.rect.right
-                    else:
-                        if player.rect.y < wall.rect.y:
-                            player.rect.bottom = wall.rect.top
-                        else:
-                            player.rect.top = wall.rect.bottom
 
+            # Обновление и отрисовка специальных стен
             for special_wall in special_walls:
                 special_wall.update()
                 special_wall.draw_wall(window)
@@ -93,30 +88,26 @@ def main():
                 if collision:
                     if is_deadly:
                         if player.lose_life():
-                            finish = end_game(window, finish, 'lose', font, WIN_COLOR, LOSE_COLOR, 
-                                           kick_sound=kick)
+                            finish = end_game(window, finish, 'lose', font, WIN_COLOR, LOSE_COLOR, kick_sound=kick)
                         else:
                             kick.play()
 
+            # Обновление и отрисовка врагов
             for monster in monsters:
-                monster.update(walls)
+                monster.update(walls, special_walls)  # Передаем оба списка стен
                 monster.reset(window)
-                
-                for special_wall in special_walls:
-                    collision, _ = special_wall.check_collision(monster)
                 
                 if pygame.sprite.collide_rect(player, monster):
                     if player.lose_life():
-                        finish = end_game(window, finish, 'lose', font, WIN_COLOR, LOSE_COLOR, 
-                                       kick_sound=kick)
+                        finish = end_game(window, finish, 'lose', font, WIN_COLOR, LOSE_COLOR, kick_sound=kick)
                     else:
                         kick.play()
 
+            # Проверка финиша
             for final in finals:
                 final.reset(window)
                 if pygame.sprite.collide_rect(player, final):
-                    finish = end_game(window, finish, 'win', font, WIN_COLOR, LOSE_COLOR, 
-                                   money_sound=money)
+                    finish = end_game(window, finish, 'win', font, WIN_COLOR, LOSE_COLOR, money_sound=money)
 
         pygame.display.update()
         clock.tick(FPS)

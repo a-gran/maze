@@ -2,8 +2,8 @@ import pygame
 import json
 import tkinter as tk
 from tkinter import ttk, colorchooser, messagebox
-from walls import Wall, SpecialWall
-from paths import WIN_WIDTH, WIN_HEIGHT, WALL_WHITE, WALL_RED, WALL_GREEN, WALL_BLUE
+from src.walls import Wall, SpecialWall  # Обновляем путь импорта
+from paths import *  # Импортируем все необходимые пути
 
 class MazeEditor:
     def __init__(self):
